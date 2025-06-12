@@ -13,7 +13,7 @@ public class ItemHolder : MonoBehaviour
     private bool holdingItem;
 
     [SerializeField]
-    private NEWDriver thisDriver;
+    private Driver thisDriver;
 
     [SerializeField]
     private NPCDriver npcDriver;
@@ -28,11 +28,8 @@ public class ItemHolder : MonoBehaviour
     // [SerializeField]
     // private TextMesh heldItemText;
 
-    // audio variables
-    private AudioSource soundPlayer;
 
-    [SerializeField]
-    AudioClip throwSound;
+
     public BaseItem HeldItem { get { return heldItem; } set { heldItem = value; } }
     public bool HoldingItem { get { return holdingItem; } set { holdingItem = value; } }
     // Start is called before the first frame update
@@ -43,7 +40,6 @@ public class ItemHolder : MonoBehaviour
         timer = Random.Range(1, 6);
 
 
-        soundPlayer = GetComponent<AudioSource>();
 
     }
 
@@ -87,7 +83,6 @@ public class ItemHolder : MonoBehaviour
         // handles item usage
         if (holdingItem)
         {
-            soundPlayer.PlayOneShot(throwSound);
             BaseItem item = Instantiate(heldItem, transform.position, transform.rotation);
             item.Kart = this;
             item.IsUpgraded = heldItem.IsUpgraded;
@@ -101,8 +96,6 @@ public class ItemHolder : MonoBehaviour
         // handles item usage
         if (holdingItem)
         {
-            // sound effect when item thrown
-            soundPlayer.PlayOneShot(throwSound);
 
             BaseItem item = Instantiate(heldItem, transform.position, transform.rotation);
             item.Kart = this;
@@ -116,13 +109,32 @@ public class ItemHolder : MonoBehaviour
 
     public void OnCollisionEnter(Collision collision)
     {
+        // checks if the kart drives into a hazard and drops the velocity to 1/8th of the previous value
+        if (collision.gameObject.transform.tag == "Hazard")
+        {
+            Destroy(collision.gameObject);
+            if (thisDriver != null)
+            {
+
+                thisDriver.velocity /= 8000;
+            }
+            else if (npcDriver != null)
+            {
+                npcDriver.DisableDriving();
+                npcDriver.velocity /= 8000;
+                npcDriver.maxSpeed = 100;
+                npcDriver.accelerationRate = 500;
+                npcDriver.followTarget.GetComponent<SplineAnimate>().enabled = false;
+            }
+        }
+
         // checks if the kart hits a projectile and drops the velocity to 1/8th of the previous value
         if (collision.gameObject.transform.tag == "Projectile")
         {
             Destroy(collision.gameObject);
             if (thisDriver != null)
             {
-                thisDriver.sphere.velocity /= 8000;
+                thisDriver.velocity /= 8000;
             }
             else if (npcDriver != null)
             {
@@ -136,9 +148,8 @@ public class ItemHolder : MonoBehaviour
 
     }
 
-    public void OnTriggerEnter(Collider collision)
+    private void OnTriggerEnter(Collider collision)
     {
-        Debug.Log("Collided");
         // Checks if kart hits an item box
         if (collision.gameObject.CompareTag("ItemBox"))
         {
@@ -168,54 +179,10 @@ public class ItemHolder : MonoBehaviour
         if (collision.gameObject.transform.tag == "Projectile")
         {
             Destroy(collision.gameObject);
-            thisDriver.sphere.velocity /= 8;
+            thisDriver.velocity /= 8;
         }
 
-        // kart uses a boost and is given the boost through a force
-        if (collision.gameObject.CompareTag("Boost"))
-        {
-            Boost boost = collision.gameObject.GetComponent<Boost>();
-            float boostMult;
-            if (boost.IsUpgraded)
-            {
-                boostMult = 2.0f;
-            }
-            else
-            {
-                boostMult = 2.0f;
-            }
-            StartCoroutine(ApplyBoost(thisDriver, boostMult, 3.0f));
-            Debug.Log("Applying Boost Item!");
-            Destroy(collision.gameObject);
-        }
-
-        // checks if the kart drives into a hazard and drops the velocity to 1/8th of the previous value
-        if (collision.gameObject.transform.tag == "Hazard")
-        {
-            Destroy(collision.gameObject);
-            if (thisDriver != null)
-            {
-
-                thisDriver.sphere.velocity /= 8000;
-            }
-            else if (npcDriver != null)
-            {
-                npcDriver.DisableDriving();
-                npcDriver.velocity /= 8000;
-                npcDriver.maxSpeed = 100;
-                npcDriver.accelerationRate = 500;
-                npcDriver.followTarget.GetComponent<SplineAnimate>().enabled = false;
-            }
-        }
     }
-    IEnumerator ApplyBoost(NEWDriver driver, float boostForce, float duration)
-    {
-        for (float t = 0; t < duration; t += Time.deltaTime)
-        {
-            Vector3 boostDirection = driver.transform.forward * boostForce;
 
-            driver.sphere.AddForce(boostDirection, ForceMode.VelocityChange);
-            yield return new WaitForFixedUpdate();
-        }
-    }
+
 }

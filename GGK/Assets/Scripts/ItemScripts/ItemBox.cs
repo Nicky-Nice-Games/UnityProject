@@ -11,8 +11,6 @@ public class ItemBox : MonoBehaviour
 
     protected float respawnTimer = 5.0f;  // The seconds the box respawns after
 
-    [SerializeField]
-    AudioClip itemBoxSound;
 
 
     /// <summary>
@@ -54,13 +52,5 @@ public class ItemBox : MonoBehaviour
     }
 
 
-    private void OnDisable()
-    {
-        // makes sure scene is loaded to not cause error
-        if (gameObject.scene.isLoaded)
-        {
-            AudioSource.PlayClipAtPoint(itemBoxSound, transform.position);
-        }
-    }
 
 }
